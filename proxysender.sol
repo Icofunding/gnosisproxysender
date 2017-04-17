@@ -18,6 +18,7 @@ contract Token {
 contract ProxySender {
 
     event BidSubmission(address indexed sender, uint256 amount);
+    event RefundSubmission(address indexed sender, uint256 amount);
     event RefundReceived(uint256 amount);
 
     uint public constant AUCTION_DEPLOYED = 0;
@@ -85,7 +86,7 @@ contract ProxySender {
         uint contribution = contributions[msg.sender];
         contributions[msg.sender] = 0;
         totalContributions -= contribution;
-        BidSubmission(msg.sender, -contribution);
+        RefundSubmission(msg.sender, contribution);
         if (!msg.sender.send(contribution)) throw;
     }
 
