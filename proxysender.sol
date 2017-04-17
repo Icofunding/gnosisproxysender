@@ -5,6 +5,7 @@ contract DutchAuction {
     function bid(address receiver) payable returns (uint);
     function claimTokens(address receiver);
     function stage() returns (uint);
+    Token public gnosisToken;
 }
 
 
@@ -43,13 +44,13 @@ contract ProxySender {
         _;
     }
 
-    function ProxySender(address _dutchAuction, address _gnosisToken)
+    function ProxySender(address _dutchAuction)
         public
     {
-        if (_dutchAuction == 0 || _gnosisToken == 0)
-            throw;
+        if (_dutchAuction == 0) throw;
         dutchAuction = DutchAuction(_dutchAuction);
-        gnosisToken = Token(_gnosisToken);
+        gnosisToken = dutchAuction.gnosisToken();
+        if (address(gnosisToken) == 0) throw;
         stage = Stages.ContributionsCollection;
     }
 
@@ -75,6 +76,17 @@ contract ProxySender {
         contributions[msg.sender] += msg.value;
         totalContributions += msg.value;
         BidSubmission(msg.sender, msg.value);
+    }
+
+    function refund()
+        public
+        atStage(Stages.ContributionsCollection)
+    {
+        uint contribution = contributions[msg.sender];
+        contributions[msg.sender] = 0;
+        totalContributions -= contribution;
+        BidSubmission(msg.sender, -contribution);
+        if (!msg.sender.send(contribution)) throw;
     }
 
     function bidProxy()
@@ -115,6 +127,6 @@ contract ProxySender {
         // Send possible refund share
         uint refund = totalBalance * contribution / totalContributions;
         if (refund > 0)
-            msg.sender.send(refund);
+            if (!msg.sender.send(refund)) throw;
     }
 }
