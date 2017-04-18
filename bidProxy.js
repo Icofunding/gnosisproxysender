@@ -33,17 +33,20 @@ function tryBid () {
     const bidProxy = {
       from: web3.eth.accounts[ 0 ],
       to: proxy,
-      data: '0xed9a3ac1'
+      data: '0xed9a3ac1',
+      gas: 1000000
     }
-    return
-    call(bidProxy)
-    .then(tokens => {
-      if (tokens.eq(0)) {
-        process.stdout.write('Current block: ' + blockNumber.toString() + '\r');
+    process.stdout.write('Current block: ' + blockNumber.toString() + '\r')
+    return call(bidProxy)
+    .then(res => {
+      // throws if not a number
+        res = web3.toBigNumber(res)
+      if (res.eq(0)) {
         return Promise.reject()
       } else {
-        console.log('Current block:', blockNumber, '- tokens balance:', web3.fromWei(tokens))
+        console.log('Current block:', blockNumber, '- place bid')
         return sendTransaction(bidProxy)
+        .then(txid => console.log('transaction:', txid))
       }
     })
   })
