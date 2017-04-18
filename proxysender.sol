@@ -104,6 +104,7 @@ contract ProxySender {
     function claimProxy()
         public
         atStage(Stages.ContributionsSent)
+        returns(uint tokensAmount)
     {
         // Auction is over
         if (dutchAuction.stage() != TRADING_STARTED)
@@ -112,6 +113,7 @@ contract ProxySender {
         totalTokens = gnosisToken.balanceOf(this);
         totalBalance = this.balance;
         stage = Stages.TokensClaimed;
+        return totalTokens
     }
 
     function transfer()
