@@ -1,13 +1,23 @@
-pragma solidity ^0.4.4;
+pragma solidity ^0.4.8;
 
 
 /// @title Abstract token contract - Functions to be implemented by token contracts.
 contract Token {
     function transfer(address to, uint256 value) returns (bool success);
+    function transferFrom(address from, address to, uint256 value) returns (bool success);
+    function approve(address spender, uint256 value) returns (bool success);
+
+    // This is not an abstract function, because solc won't recognize generated getter functions for public variables as functions.
+    function totalSupply() constant returns (uint256 supply) {}
+    function balanceOf(address owner) constant returns (uint256 balance);
+    function allowance(address owner, address spender) constant returns (uint256 remaining);
+
+    event Transfer(address indexed from, address indexed to, uint256 value);
+    event Approval(address indexed owner, address indexed spender, uint256 value);
 }
 
 
-/// @title Dutch auction contract - creation of Gnosis tokens.
+/// @title Dutch auction contract - distribution of Gnosis tokens using an auction.
 /// @author Stefan George - <stefan.george@consensys.net>
 contract DutchAuction {
 
@@ -42,6 +52,7 @@ contract DutchAuction {
      */
     enum Stages {
         AuctionDeployed,
+        AuctionSetUp,
         AuctionStarted,
         AuctionEnded,
         TradingStarted
@@ -66,7 +77,13 @@ contract DutchAuction {
 
     modifier isWallet() {
         if (msg.sender != wallet)
-            // Only owner is allowed to proceed
+            // Only wallet is allowed to proceed
+            throw;
+        _;
+    }
+
+    modifier isValidPayload() {
+        if (msg.data.length != 4 && msg.data.length != 36)
             throw;
         _;
     }
@@ -104,18 +121,23 @@ contract DutchAuction {
     function setup(address _gnosisToken)
         public
         isOwner
+        atStage(Stages.AuctionDeployed)
     {
-        if (address(gnosisToken) != 0 || _gnosisToken == 0)
-            // Setup was executed already or arguments are null.
+        if (_gnosisToken == 0)
+            // Argument is null.
             throw;
         gnosisToken = Token(_gnosisToken);
+        // Validate token balance
+        if (gnosisToken.balanceOf(this) != MAX_TOKENS_SOLD)
+            throw;
+        stage = Stages.AuctionSetUp;
     }
 
     /// @dev Starts auction and sets startBlock.
     function startAuction()
         public
         isWallet
-        atStage(Stages.AuctionDeployed)
+        atStage(Stages.AuctionSetUp)
     {
         stage = Stages.AuctionStarted;
         startBlock = block.number;
@@ -127,7 +149,7 @@ contract DutchAuction {
     function changeSettings(uint _ceiling, uint _priceFactor)
         public
         isWallet
-        atStage(Stages.AuctionDeployed)
+        atStage(Stages.AuctionSetUp)
     {
         ceiling = _ceiling;
         priceFactor = _priceFactor;
@@ -160,6 +182,7 @@ contract DutchAuction {
     function bid(address receiver)
         public
         payable
+        isValidPayload
         timedTransitions
         atStage(Stages.AuctionStarted)
         returns (uint amount)
@@ -169,13 +192,13 @@ contract DutchAuction {
             receiver = msg.sender;
         amount = msg.value;
         // Prevent that more than 90% of tokens are sold. Only relevant if cap not reached.
-        uint maxEther = (MAX_TOKENS_SOLD / 10**18) * calcTokenPrice() - totalReceived;
-        uint maxEtherBasedOnTotalReceived = ceiling - totalReceived;
-        if (maxEtherBasedOnTotalReceived < maxEther)
-            maxEther = maxEtherBasedOnTotalReceived;
+        uint maxWei = (MAX_TOKENS_SOLD / 10**18) * calcTokenPrice() - totalReceived;
+        uint maxWeiBasedOnTotalReceived = ceiling - totalReceived;
+        if (maxWeiBasedOnTotalReceived < maxWei)
+            maxWei = maxWeiBasedOnTotalReceived;
         // Only invest maximum possible amount.
-        if (amount > maxEther) {
-            amount = maxEther;
+        if (amount > maxWei) {
+            amount = maxWei;
             // Send change back to receiver address. In case of a ShapeShift bid the user receives the change back directly.
             if (!receiver.send(msg.value - amount))
                 // Sending failed
@@ -187,8 +210,8 @@ contract DutchAuction {
             throw;
         bids[receiver] += amount;
         totalReceived += amount;
-        if (maxEther == amount)
-            // When maxEther is equal to the big amount the auction is ended and finalizeAuction is triggered.
+        if (maxWei == amount)
+            // When maxWei is equal to the big amount the auction is ended and finalizeAuction is triggered.
             finalizeAuction();
         BidSubmission(receiver, amount);
     }
@@ -197,6 +220,7 @@ contract DutchAuction {
     /// @param receiver Tokens will be assigned to this address if set.
     function claimTokens(address receiver)
         public
+        isValidPayload
         timedTransitions
         atStage(Stages.TradingStarted)
     {
@@ -224,7 +248,7 @@ contract DutchAuction {
         public
         returns (uint)
     {
-        return priceFactor * 1 ether / (block.number - startBlock + 7500) + 1;
+        return priceFactor * 10**18 / (block.number - startBlock + 7500) + 1;
     }
 
     /*
