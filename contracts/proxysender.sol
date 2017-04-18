@@ -1,6 +1,5 @@
 pragma solidity ^0.4.4;
 
-
 contract DutchAuction {
     function bid(address receiver) payable returns (uint);
     function claimTokens(address receiver);
@@ -92,6 +91,7 @@ contract ProxySender {
     function bidProxy()
         public
         atStage(Stages.ContributionsCollection)
+        returns(bool)
     {
         // Check auction has started
         if (dutchAuction.stage() != AUCTION_STARTED)
@@ -99,12 +99,12 @@ contract ProxySender {
         // Send all money to auction contract
         stage = Stages.ContributionsSent;
         dutchAuction.bid.value(this.balance)(0);
+        return true;
     }
 
     function claimProxy()
         public
         atStage(Stages.ContributionsSent)
-        returns(uint tokensAmount)
     {
         // Auction is over
         if (dutchAuction.stage() != TRADING_STARTED)
@@ -113,7 +113,6 @@ contract ProxySender {
         totalTokens = gnosisToken.balanceOf(this);
         totalBalance = this.balance;
         stage = Stages.TokensClaimed;
-        return totalTokens
     }
 
     function transfer()

@@ -35,27 +35,37 @@ function tryBid () {
       to: proxy,
       data: '0xed9a3ac1'
     }
-    return
-    call(bidProxy)
+    process.stdout.write('Current block: ' + blockNumber.toString() + '\r')
+    return call(bidProxy)
     .then(tokens => {
+      // throws if not a number
+        tokens = web3.toBigNumber(tokens)
+      // } catch (err) {
+      //   tokens = web3.toBigNumber(0)
+      // }
+      // console.log('#', tokens.toString())
       if (tokens.eq(0)) {
-        process.stdout.write('Current block: ' + blockNumber.toString() + '\r');
         return Promise.reject()
       } else {
         console.log('Current block:', blockNumber, '- tokens balance:', web3.fromWei(tokens))
         return sendTransaction(bidProxy)
       }
     })
+    // .catch(err => {
+    //   console.log(err)
+    //   return Promise.reject()
+    // })
   })
 }
 
 
 const loop = () => setTimeout(
   () => {
+    console.log('*')
     tryBid()
       .catch(() => loop())
   },
-  5000
+  2000
 )
 
 loop()
