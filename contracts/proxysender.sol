@@ -1,14 +1,14 @@
 pragma solidity ^0.4.4;
 
-contract DutchAuction {
+contract DutchAuctionInterface {
     function bid(address receiver) payable returns (uint);
     function claimTokens(address receiver);
     function stage() returns (uint);
-    Token public gnosisToken;
+    TokenInterface public gnosisToken;
 }
 
 
-contract Token {
+contract TokenInterface {
     function transfer(address to, uint256 value) returns (bool success);
     function balanceOf(address owner) constant returns (uint256 balance);
 }
@@ -23,8 +23,8 @@ contract ProxySender {
     uint public constant AUCTION_STARTED = 2;
     uint public constant TRADING_STARTED = 4;
 
-    DutchAuction public dutchAuction;
-    Token public gnosisToken;
+    DutchAuctionInterface public dutchAuction;
+    TokenInterface public gnosisToken;
     uint public totalContributions;
     uint public totalTokens;
     uint public totalBalance;
@@ -47,7 +47,7 @@ contract ProxySender {
         public
     {
         if (_dutchAuction == 0) throw;
-        dutchAuction = DutchAuction(_dutchAuction);
+        dutchAuction = DutchAuctionInterface(_dutchAuction);
         gnosisToken = dutchAuction.gnosisToken();
         if (address(gnosisToken) == 0) throw;
         stage = Stages.ContributionsCollection;
