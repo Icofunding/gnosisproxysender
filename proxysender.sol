@@ -1,4 +1,4 @@
-pragma solidity 0.4.4;
+pragma solidity ^0.4.4;
 
 
 contract DutchAuction {
@@ -21,9 +21,8 @@ contract ProxySender {
     event RefundSubmission(address indexed sender, uint256 amount);
     event RefundReceived(uint256 amount);
 
-    uint public constant AUCTION_DEPLOYED = 0;
-    uint public constant AUCTION_STARTED = 1;
-    uint public constant TRADING_STARTED = 3;
+    uint public constant AUCTION_STARTED = 2;
+    uint public constant TRADING_STARTED = 4;
 
     DutchAuction public dutchAuction;
     Token public gnosisToken;
