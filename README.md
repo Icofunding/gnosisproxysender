@@ -15,9 +15,10 @@ Tools for Gnosis ICO:
 The tool requires an ethereum node on main network, rpc enabled, **accound 0 unlocked** with some ethers to pay transaction fees.
 Run:
 
-    ./bidProxy.js <gnosis_dutch_auction_address>
+    ./bidProxy.js <proxy_address>
     
-where _<gnosis_dutch_auction_address>_ is the address of the official smart contract for gnosis ico.
+where _<proxy_address>_ is the address of an istance of the ProxySender smart contract initialized with
+the address of the official DutchAuction smart contract for gnosis ico.
 
 **Reminder**: to start a node (geth or parity) with an unlocked account use the `--unlock <address> --password <file>` parameters.
 
@@ -33,10 +34,15 @@ Run ICO simulation:
 
     truffle test test/ico_simulation.js
 
-## ProxySender smart contract
+## ICO steps and ProxySender interactions
+
+Before deploying the ProxySender smart contract, a DutchAuction instance is required and it must be initialized with
+the token address (the setup() method). ProxySender constructor requires the DutchAuction address as argument.
+
+Steps:
 
 - Before ICO start, users send own ethers to the ProxySender smartcontract using a normal transaction.
-- Before ICO start, users can ask a refund using the `refund()` method.
+- Before ICO start, users can ask a refund calling the `refund()` method.
 - After ICO start, `bidProxy()` must be called to send funds to the ICO contract (the bidProxy tool can be used).
 - After ICO end, `claimProxy()` must be called to reclaim tokens for the proxy.
 - After the tokens are reclaimed for the proxy, users reclaim own tokens sending a normal transaction with value 0 to
