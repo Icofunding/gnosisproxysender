@@ -36,7 +36,12 @@ function tryBid () {
       data: '0xed9a3ac1',
       gas: 1000000
     }
-    process.stdout.write('Current block: ' + blockNumber.toString() + '\r')
+    try {
+      balance = web3.fromWei(web3.toBigNumber(balance)).toDigits(5).toString() + ' eth'
+    } catch (e) {
+      balance = 'unknown'
+    }
+    process.stdout.write(`Current block: ${blockNumber.toString()} - contract balance: ${balance}\r`)
     return call(bidProxy)
     .then(res => {
       // throws if not a number
@@ -44,7 +49,7 @@ function tryBid () {
       if (res.eq(0)) {
         return Promise.reject()
       } else {
-        console.log('Current block:', blockNumber, '- place bid')
+        console.log(`Current block: ${blockNumber} - Contract balance: ${balance} - place bid`)
         return sendTransaction(bidProxy)
         .then(txid => console.log('transaction:', txid))
       }

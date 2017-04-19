@@ -39,3 +39,12 @@ getBalance(proxy)
     else console.log('variato - balance:', web3.fromWei(newBalance).toFixed())
   })
 })
+
+//
+// **** token 0xb791b8e3c92718f4cafdb2d98efcc0d739fab471
+// **** dutchAuction 0xd0a37bc697eb5bea3699a301a3f220fabce4f240
+// **** proxy 0x32e8ebe08ff4c823c1908d72ae1b30fda6069cda
+//
+// web3.eth.sendTransaction({from: web3.eth.accounts[0], to: '0x32e8ebe08ff4c823c1908d72ae1b30fda6069cda', value: web3.toWei(1)})
+// web3.eth.getBalance('0x32e8ebe08ff4c823c1908d72ae1b30fda6069cda')
+// DutchAuction.at('0xd0a37bc697eb5bea3699a301a3f220fabce4f240').startAuction()
