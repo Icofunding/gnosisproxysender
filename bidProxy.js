@@ -12,10 +12,14 @@ console.log('ProxySender contract address:', proxy)
 web3 = new Web3(new Web3.providers.HttpProvider(endpoint))
 
 const promisify = (fn) => (...args) => new Promise((resolve, reject) => {
-  fn(...args, (err, res) => {
-    if (err) reject(err)
-    else resolve(res)
-  })
+  try {
+    fn(...args, (err, res) => {
+      if (err) reject(err)
+      else resolve(res)
+    })
+  } catch (err) {
+    reject(err)
+  }
 })
 const getBalance = promisify(web3.eth.getBalance)
 const sendTransaction = promisify(web3.eth.sendTransaction)
@@ -28,12 +32,17 @@ const timeout = (ms, timedPromise) => new Promise((resolve, reject) => {
     timer = null
     reject()
   }, ms)
-  timedPromise.then((res) => {
-    if (timer) {
-      clearTimeout(timer)
-      resolve(res)
-    }
-  })
+  timedPromise
+    .then((res) => {
+      if (timer) {
+        clearTimeout(timer)
+        resolve(res)
+      }
+    })
+    .catch(err => {
+      if (timer) clearTimeout(timer)
+      reject(err)
+    })
 })
 
 
