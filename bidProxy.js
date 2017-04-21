@@ -59,7 +59,7 @@ function tryBid () {
     return call(bidProxy)
     .then(res => {
       // throws if not a number
-        res = web3.toBigNumber(res)
+      res = web3.toBigNumber(res)
       if (res.eq(0)) {
         return Promise.reject()
       } else {
@@ -80,16 +80,30 @@ const loop = () => setTimeout(
   5000
 )
 
+const checkGnosisToken = (proxy) => call({ to: proxy, data: '0x60fd902c' })
+  .then(res => {
+    res = web3.toBigNumber(res)
+    if (res.eq(0)) return Promise.reject()
+  })
+
 // check if account is unlocked
-console.log('Trying to use the account 0 signing data 0x00 ...')
+console.log('Trying to use the account 0 to sign data 0x00 ...')
 timeout(2000, sign(web3.eth.accounts[0], '0x00'))
+  .catch(() => {
+    console.error('Cannot sign data. Check if the node is reacheable and the account is unlocked.')
+    process.exit(1)
+  })
+  .then(() => {
+    console.log('Checking the ProxySender contract address...')
+    return checkGnosisToken(proxy)
+  })
+  .catch((err) => {
+    console.error('Gnosis token unknown. Check the ProxySender address.')
+    process.exit(1)
+  })
   .then(() => {
     process.stdout.write('Starting...\r')
     // wait ICO start then call proxySend()
     loop()
-  })
-  .catch(() => {
-    console.error('Cannot sign data. Check if the node is reacheable and the account is unlocked.')
-    process.exit(1)
   })
 
