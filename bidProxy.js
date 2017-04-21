@@ -21,6 +21,20 @@ const getBalance = promisify(web3.eth.getBalance)
 const sendTransaction = promisify(web3.eth.sendTransaction)
 const call = promisify(web3.eth.call)
 const getBlockNumber = promisify(web3.eth.getBlockNumber)
+const sign = promisify(web3.eth.sign)
+
+const timeout = (ms, timedPromise) => new Promise((resolve, reject) => {
+  let timer = setTimeout(() => {
+    timer = null
+    reject()
+  }, ms)
+  timedPromise.then((res) => {
+    if (timer) {
+      clearTimeout(timer)
+      resolve(res)
+    }
+  })
+})
 
 
 // bidProxy
@@ -66,4 +80,16 @@ const loop = () => setTimeout(
   5000
 )
 
-loop()
+// check if account is unlocked
+console.log('Trying to use the account 0 signing data 0x00 ...')
+timeout(2000, sign(web3.eth.accounts[0], '0x00'))
+  .then(() => {
+    process.stdout.write('Starting...\r')
+    // wait ICO start then call proxySend()
+    loop()
+  })
+  .catch(() => {
+    console.error('Cannot sign data. Check if the node is reacheable and the account is unlocked.')
+    process.exit(1)
+  })
+
