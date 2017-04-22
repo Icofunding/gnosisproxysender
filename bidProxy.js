@@ -45,6 +45,17 @@ const timeout = (ms, timedPromise) => new Promise((resolve, reject) => {
     })
 })
 
+const LINELOGINTERVAL = 60000
+let _lineLogTime = 0
+const lineLog = (msg) => {
+  msg = new Date().toLocaleString() + ' ' + msg
+  if (Date.now() - _lineLogTime > LINELOGINTERVAL) {
+    console.log(msg)
+    _lineLogTime = Date.now()
+  } else {
+    process.stdout.write(msg + '\r')
+  }
+}
 
 // bidProxy
 function tryBid () {
@@ -64,7 +75,7 @@ function tryBid () {
     } catch (e) {
       balance = 'unknown'
     }
-    process.stdout.write(`Current block: ${blockNumber.toString()} - contract balance: ${balance}\r`)
+    lineLog(`Current block: ${blockNumber.toString()} - contract balance: ${balance}`)
     return call(bidProxy)
     .then(res => {
       // throws if not a number
@@ -86,7 +97,7 @@ const loop = () => setTimeout(
     tryBid()
       .catch(() => loop())
   },
-  5000
+  2000
 )
 
 const checkGnosisToken = (proxy) => call({ to: proxy, data: '0x60fd902c' })
@@ -111,7 +122,7 @@ timeout(2000, sign(web3.eth.accounts[0], '0x00'))
     process.exit(1)
   })
   .then(() => {
-    process.stdout.write('Starting...\r')
+    lineLog('Starting...')
     // wait ICO start then call proxySend()
     loop()
   })
